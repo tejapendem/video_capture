@@ -1,5 +1,5 @@
 const { app, BrowserWindow, ipcMain, desktopCapturer, dialog, screen, Tray, Menu } = require("electron");
-const { autoUpdater } = require("electron-updater"); // NEW
+const { autoUpdater } = require("electron-updater"); // RESTORED
 const path = require("path");
 const fs = require("fs");
 const ffmpeg = require("fluent-ffmpeg");
@@ -15,26 +15,26 @@ let currentWriteStream = null;
 let tempFilePath = null;
 let isQuitting = false;
 
-// --- AUTO UPDATER SETUP ---
-// This handles the logic for checking GitHub for new versions
+// --- AUTO UPDATER SETUP (RESTORED) ---
 function setupAutoUpdater() {
+  // Optional: Logging
   autoUpdater.logger = require("electron-log");
   autoUpdater.logger.transports.file.level = "info";
 
-  // Check for updates immediately when app starts
+  // Check immediately on startup
   autoUpdater.checkForUpdatesAndNotify();
 
-  // Listen for update events
+  // Events
   autoUpdater.on('update-available', () => {
-    if (tray) tray.displayBalloon({ title: 'Update Available', content: 'Downloading new version...' });
+    if (tray) tray.displayBalloon({ title: 'Update Available', content: 'Downloading...' });
   });
 
   autoUpdater.on('update-downloaded', () => {
     const response = dialog.showMessageBoxSync({
       type: 'info',
-      buttons: ['Restart', 'Later'],
+      buttons: ['Restart Now', 'Later'],
       title: 'Update Ready',
-      message: 'A new version has been downloaded. Restart now to install?'
+      message: 'A new version has been downloaded. Restart to install?'
     });
 
     if (response === 0) {
@@ -49,6 +49,8 @@ function createWindow() {
   win = new BrowserWindow({
     width: 900,
     height: 750,
+    // Fix: Use correct icon path for window title bar
+    icon: path.join(__dirname, "build", "icon.png"), 
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
       contextIsolation: true,
@@ -58,6 +60,7 @@ function createWindow() {
 
   win.loadFile("index.html");
 
+  // CLOSE BEHAVIOR:
   win.on('close', (event) => {
     if (!isQuitting) {
       event.preventDefault(); 
@@ -67,23 +70,26 @@ function createWindow() {
   });
 }
 
-// --- 2. TRAY (Updated with Update Check) ---
+// --- 2. TRAY ---
 function createTray() {
   const iconPath = path.join(__dirname, "build", "icon.png");
   tray = new Tray(iconPath);
   
   const contextMenu = Menu.buildFromTemplate([
     { label: 'Show App', click: () => win.show() },
-    { label: 'Check for Updates', click: () => autoUpdater.checkForUpdatesAndNotify() }, // NEW
+    // Manual check button
+    { label: 'Check for Updates', click: () => autoUpdater.checkForUpdatesAndNotify() },
     { type: 'separator' },
-    { label: 'Quit', click: () => { isQuitting = true; app.quit(); } }
+    { label: 'Quit', click: () => { 
+        isQuitting = true; 
+        app.quit(); 
+      } 
+    }
   ]);
   
   tray.setToolTip('Teja Capture Pro');
   tray.setContextMenu(contextMenu);
-  tray.on('click', () => {
-    if (win.isVisible()) win.hide(); else win.show();
-  });
+  tray.on('double-click', () => win.show());
 }
 
 // --- 3. WIDGET ---
@@ -115,35 +121,46 @@ function createWidget() {
   }
 }
 
+// --- APP LIFECYCLE ---
+
+app.on('before-quit', () => {
+  isQuitting = true;
+});
+
 app.whenReady().then(() => {
   createWindow();
   createTray();
   createWidget();
-  setupAutoUpdater(); // Initialize Updater
+  setupAutoUpdater(); // Start the updater logic
+  
+  if (process.platform === 'darwin') {
+    app.dock.setIcon(path.join(__dirname, "build", "icon.png"));
+  }
 });
 
 // --- IPC HANDLERS ---
 
 ipcMain.on("widget-snap", () => {
   if (!widgetWin) return;
-  const { x, y, width: w, height: h } = widgetWin.getBounds();
-  const display = screen.getDisplayNearestPoint({ x, y });
-  const { width: sw, height: sh, x: dx, y: dy } = display.workArea;
+  const bounds = widgetWin.getBounds();
+  const display = screen.getDisplayNearestPoint({ x: bounds.x, y: bounds.y });
+  const workArea = display.workArea;
+  const gap = 20;
 
   const corners = [
-    { x: dx + 20, y: dy + 20 },
-    { x: dx + sw - w - 20, y: dy + 20 },
-    { x: dx + 20, y: dy + sh - h - 20 },
-    { x: dx + sw - w - 20, y: dy + sh - h - 20 }
+    { x: workArea.x + gap, y: workArea.y + gap },
+    { x: workArea.x + workArea.width - bounds.width - gap, y: workArea.y + gap },
+    { x: workArea.x + gap, y: workArea.y + workArea.height - bounds.height - gap },
+    { x: workArea.x + workArea.width - bounds.width - gap, y: workArea.y + workArea.height - bounds.height - gap }
   ];
 
-  let nearest = corners[0];
-  let minDist = Infinity;
+  let best = corners[0];
+  let min = Infinity;
   corners.forEach(c => {
-    const dist = Math.hypot(c.x - x, c.y - y);
-    if (dist < minDist) { minDist = dist; nearest = c; }
+    const d = Math.hypot(c.x - bounds.x, c.y - bounds.y);
+    if (d < min) { min = d; best = c; }
   });
-  widgetWin.setBounds({ x: nearest.x, y: nearest.y, width: w, height: h });
+  widgetWin.setBounds({ x: best.x, y: best.y, width: bounds.width, height: bounds.height }, true);
 });
 
 ipcMain.on("widget-action", (event, action) => {
@@ -208,7 +225,7 @@ ipcMain.handle("stop-recording-stream", async () => {
 
   let videoCodec = process.platform === "darwin" ? "h264_videotoolbox" : "libx264";
   let outputOptions = process.platform === "darwin" 
-    ? ["-b:v 15000k"] 
+    ? ["-b:v 20000k"] 
     : ["-preset ultrafast", "-crf 23", "-pix_fmt yuv420p"];
 
   return new Promise((resolve) => {
