@@ -23,9 +23,9 @@
       <div>
         <label>FPS:</label>
         <select id="fpsSelect">
-          <option value="25">25 FPS (Standard)</option>
+          <option value="25">25 FPS</option>
           <option value="30" selected>30 FPS (Smooth)</option>
-          <option value="60">60 FPS (Gaming)</option>
+          <option value="60">60 FPS (Pro)</option>
         </select>
       </div>
     </div>
@@ -40,6 +40,17 @@
   </div>
 
   <p id="status">Ready</p>
+
+  <div style="margin-top: 20px; text-align: right;">
+    <button id="updateBtn" style="font-size: 12px; opacity: 0.7;">Check for Updates 🔄</button>
+  </div>
+
   <script src="renderer.js"></script>
+  <script>
+    document.getElementById('updateBtn').onclick = () => {
+      window.api.checkForUpdates();
+      document.getElementById('status').innerText = "Checking for updates...";
+    };
+  </script>
 </body>
 </html>

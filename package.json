@@ -1,6 +1,6 @@
 {
   "name": "teja-capture",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Teja Capture Pro",
   "author": "Teja",
   "main": "main.js",
@@ -35,7 +35,9 @@
       "category": "public.app-category.video",
       "target": ["dmg", "zip"],
       "icon": "build/icon.png",
-      "hardenedRuntime": false,
+      "entitlements": "build/entitlements.mac.plist",
+      "entitlementsInherit": "build/entitlements.mac.plist",
+      "hardenedRuntime": true,
       "gatekeeperAssess": false,
       "extendInfo": {
         "NSMicrophoneUsageDescription": "We need access to the microphone to record audio.",
