@@ -1,0 +1,5 @@
+body { font-family: Arial, sans-serif; padding: 20px; background: #f0f0f0; }
+button { padding: 10px 15px; margin-right: 5px; cursor: pointer; }
+button:disabled { cursor: not-allowed; opacity: 0.6; }
+.settings { background: white; padding: 15px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+#status { font-weight: bold; margin-top: 20px; color: #333; }

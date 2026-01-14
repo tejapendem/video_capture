@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    body { margin: 0; padding: 0; background: transparent; display: flex; justify-content: center; overflow: hidden; }
+    .indicator {
+      width: 100px;
+      height: 30px;
+      background: rgba(255, 0, 0, 0.7);
+      color: white;
+      font-family: sans-serif;
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 0 0 10px 10px;
+      font-weight: bold;
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0% { opacity: 0.7; }
+      50% { opacity: 1; box-shadow: 0 0 10px red; }
+      100% { opacity: 0.7; }
+    }
+  </style>
+</head>
+<body>
+  <div class="indicator">REC ●</div>
+</body>
+</html>

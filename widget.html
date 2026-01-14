@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    * { box-sizing: border-box; user-select: none; }
+    
+    body { 
+      margin: 0; padding: 0; 
+      background: transparent; 
+      display: flex; 
+      align-items: center; 
+      justify-content: flex-end; 
+      height: 100vh;
+      overflow: hidden;
+      font-family: sans-serif;
+    }
+
+    .widget-container {
+      display: flex;
+      align-items: center;
+      background: rgba(0, 0, 0, 0.8);
+      border-radius: 30px;
+      padding: 5px;
+      transition: all 0.3s ease-in-out;
+      -webkit-app-region: drag; 
+      border: 1px solid rgba(255,255,255,0.2);
+    }
+
+    .actions {
+      display: flex;
+      width: 0;
+      opacity: 0;
+      overflow: hidden;
+      transition: all 0.3s ease-in-out;
+      -webkit-app-region: no-drag; 
+    }
+    
+    .widget-container.expanded .actions {
+      width: 85px;
+      opacity: 1;
+      margin-right: 5px;
+    }
+
+    .btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 18px;
+      margin: 0 4px;
+      padding: 5px;
+      color: white;
+      -webkit-app-region: no-drag; 
+      transition: 0.2s;
+    }
+    .btn:hover { transform: scale(1.2); color: #ffcc00; }
+
+    .logo {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      cursor: pointer;
+      border: 2px solid white;
+      -webkit-app-region: no-drag; 
+    }
+    .logo:hover { border-color: #ffcc00; }
+  </style>
+</head>
+<body>
+  <div class="widget-container" id="container">
+    <div class="actions">
+      <button class="btn" id="btnShot" title="Screenshot">📸</button>
+      <button class="btn" id="btnRec" title="Record">🔴</button>
+    </div>
+    <img src="build/icon.png" class="logo" id="logoBtn" />
+  </div>
+
+  <script>
+    const { ipcRenderer } = require('electron');
+    const container = document.getElementById('container');
+    const logoBtn = document.getElementById('logoBtn');
+    
+    let isDragging = false;
+    let startX = 0;
+    let startY = 0;
+
+    // 1. CLICK LOGIC (Toggle Menu)
+    logoBtn.addEventListener('click', (e) => {
+      // Only toggle if we didn't just drag
+      if (!isDragging) {
+        container.classList.toggle('expanded');
+      }
+      isDragging = false;
+    });
+
+    // 2. ACTION BUTTONS
+    document.getElementById('btnShot').addEventListener('click', () => {
+      ipcRenderer.send('widget-action', 'screenshot');
+      container.classList.remove('expanded');
+    });
+
+    document.getElementById('btnRec').addEventListener('click', () => {
+      ipcRenderer.send('widget-action', 'record');
+      container.classList.remove('expanded');
+    });
+
+    // 3. SNAPPING LOGIC
+    // We listen to the window itself to catch the end of a drag
+    window.addEventListener('mouseup', () => {
+        // Wait a tiny bit to ensure Electron has finished the native drag
+        setTimeout(() => {
+            ipcRenderer.send('widget-snap');
+        }, 100);
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,54 @@
+{
+  "name": "teja-capture",
+  "version": "1.0.0",
+  "description": "Professional Screen Recorder",
+  "author": "Teja",
+  "main": "main.js",
+
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder --mac --win"
+  },
+
+  "dependencies": {
+    "electron-updater": "^6.1.7",
+    "ffmpeg-static": "^5.2.0",
+    "fluent-ffmpeg": "^2.1.2"
+  },
+
+  "devDependencies": {
+    "electron": "^28.0.0",
+    "electron-builder": "^26.4.0"
+  },
+
+  "build": {
+    "appId": "com.teja.capture",
+    "productName": "Teja Capture Pro",
+
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "tejapendem",
+        "repo": "video_capture"
+      }
+    ],
+
+    "mac": {
+      "category": "public.app-category.video",
+      "target": ["dmg", "zip"],
+      "icon": "build/icon.png",
+      "hardenedRuntime": true,
+      "gatekeeperAssess": false
+    },
+
+    "win": {
+      "target": "nsis",
+      "icon": "build/icon.png"
+    },
+
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    }
+  }
+}

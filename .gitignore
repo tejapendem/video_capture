@@ -1,0 +1,11 @@
+# Node
+node_modules/
+
+# Electron build output
+dist/
+
+# Logs
+*.log
+
+# OS
+.DS_Store

@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <title>Teja Capture Pro</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <h1>Teja Capture Pro</h1>
+
+  <div class="settings">
+    <label><input type="checkbox" id="micToggle" /> 🎤 Microphone</label>
+    <label><input type="checkbox" id="sysAudioToggle" /> 🔊 System Audio</label>
+    
+    <div style="margin-top: 10px; display: flex; gap: 15px;">
+      <div>
+        <label>Mode:</label>
+        <select id="recordMode">
+          <option value="fullscreen">Full Screen</option>
+          <option value="region">Select Region</option>
+        </select>
+      </div>
+      <div>
+        <label>FPS:</label>
+        <select id="fpsSelect">
+          <option value="25">25 FPS (Standard)</option>
+          <option value="30" selected>30 FPS (Smooth)</option>
+          <option value="60">60 FPS (Gaming)</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <div class="controls">
+    <button id="startBtn">Start Recording</button>
+    <button id="stopBtn" disabled>Stop</button>
+    <button id="pauseBtn" disabled>Pause</button>
+    <button id="resumeBtn" disabled>Resume</button>
+    <button id="screenshotBtn">Screenshot 📸</button>
+  </div>
+
+  <p id="status">Ready</p>
+  <script src="renderer.js"></script>
+</body>
+</html>
