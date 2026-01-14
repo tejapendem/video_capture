@@ -4,12 +4,16 @@
   "description": "Teja Capture Pro",
   "main": "main.js",
   "author": "Teja Pendem",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tejapendem/video_capture.git"
+  },
   "scripts": {
     "start": "electron .",
     "build": "electron-builder build --mac --publish never"
   },
   "dependencies": {
-    "electron-log": "^5.4.3",
+    "electron-log": "^5.0.0",
     "electron-updater": "^6.1.7",
     "ffmpeg-static": "^5.2.0",
     "fluent-ffmpeg": "^2.1.2"
@@ -32,12 +36,16 @@
       "**/*",
       "build/**/*"
     ],
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "tejapendem",
+        "repo": "video_capture"
+      }
+    ],
     "mac": {
       "category": "public.app-category.video",
-      "target": [
-        "dmg",
-        "zip"
-      ],
+      "target": ["dmg", "zip"],
       "icon": "build/icon.icns",
       "entitlements": "build/entitlements.mac.plist",
       "entitlementsInherit": "build/entitlements.mac.plist",

@@ -1,5 +1,6 @@
 const { app, BrowserWindow, ipcMain, desktopCapturer, dialog, screen, Tray, Menu } = require("electron");
 const { autoUpdater } = require("electron-updater");
+const log = require("electron-log"); // Required for debugging updates
 const path = require("path");
 const fs = require("fs");
 const ffmpeg = require("fluent-ffmpeg");
@@ -8,7 +9,6 @@ const ffmpeg = require("fluent-ffmpeg");
 let ffmpegPath;
 if (app.isPackaged) {
   // In production, finding the unpacked binary is tricky. 
-  // We point to the node_modules inside the resources folder.
   ffmpegPath = require('ffmpeg-static').replace(
     'app.asar',
     'app.asar.unpacked'
@@ -28,10 +28,53 @@ let currentWriteStream = null;
 let tempFilePath = null;
 let isQuitting = false;
 
-// --- AUTO UPDATER ---
+// --- ROBUST AUTO UPDATER ---
 function setupAutoUpdater() {
-  autoUpdater.logger = require("electron-log");
+  // 1. Configure Logger
+  autoUpdater.logger = log;
   autoUpdater.logger.transports.file.level = "info";
+  
+  // 2. Update Available (Downloading)
+  autoUpdater.on('update-available', () => {
+    log.info("Update found. Downloading...");
+    // Only show dialog if main window exists
+    if (win) {
+      dialog.showMessageBox(win, {
+        type: 'info',
+        title: 'Update Found',
+        message: 'A new version is downloading in the background...'
+      });
+    }
+  });
+
+  // 3. Update Not Available (Debugging)
+  autoUpdater.on('update-not-available', () => {
+    log.info("No update available.");
+  });
+
+  // 4. Error Handling
+  autoUpdater.on('error', (err) => {
+    log.error("Update Error: ", err);
+    // Don't annoy user with popups on startup errors, 
+    // but we will send this error back if they manually clicked "Check Updates"
+  });
+
+  // 5. Download Finished (Ready to Install)
+  autoUpdater.on('update-downloaded', () => {
+    log.info("Update downloaded.");
+    const res = dialog.showMessageBoxSync(win, {
+      type: 'question',
+      buttons: ['Restart & Install', 'Later'],
+      title: 'Update Ready',
+      message: 'New version downloaded. Restart now to update?'
+    });
+    if (res === 0) {
+      isQuitting = true;
+      autoUpdater.quitAndInstall();
+    }
+  });
+
+  // Check immediately if packaged
   if (app.isPackaged) {
     autoUpdater.checkForUpdatesAndNotify();
   }
@@ -124,10 +167,17 @@ app.on('before-quit', () => isQuitting = true);
 
 // --- IPC HANDLERS ---
 
-ipcMain.handle("check-for-updates", () => {
+// UPDATED: Check for Updates Manually
+ipcMain.handle("check-for-updates", async () => {
   if (!app.isPackaged) return "Cannot update in Dev Mode";
-  autoUpdater.checkForUpdates();
-  return "Checking...";
+  
+  try {
+    const result = await autoUpdater.checkForUpdates();
+    return "Checking for updates...";
+  } catch (error) {
+    log.error("Manual update check failed:", error);
+    return "Error: " + error.message;
+  }
 });
 
 ipcMain.on("widget-snap", () => {
