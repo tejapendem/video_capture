@@ -6,51 +6,54 @@
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <h1>Teja Capture Pro</h1>
 
-  <div class="settings">
-    <label><input type="checkbox" id="micToggle" /> 🎤 Microphone</label>
-    <label><input type="checkbox" id="sysAudioToggle" /> 🔊 System Audio</label>
-    
-    <div style="margin-top: 10px; display: flex; gap: 15px;">
-      <div>
-        <label>Mode:</label>
-        <select id="recordMode">
+  <div class="app-container">
+    <h1>Teja Capture Pro</h1>
+
+    <div class="settings-grid">
+      <div class="setting-item">
+        <label>Audio Sources</label>
+        <label class="checkbox-label"><input type="checkbox" id="micToggle"> 🎤 Microphone</label>
+        <label class="checkbox-label"><input type="checkbox" id="sysAudioToggle"> 🔊 System Audio</label>
+      </div>
+
+      <div class="setting-item">
+        <label>Video Settings</label>
+        <select id="recordMode" style="margin-bottom: 8px;">
           <option value="fullscreen">Full Screen</option>
           <option value="region">Select Region</option>
         </select>
-      </div>
-      <div>
-        <label>FPS:</label>
         <select id="fpsSelect">
-          <option value="25">25 FPS</option>
+          <option value="25">25 FPS (Standard)</option>
           <option value="30" selected>30 FPS (Smooth)</option>
           <option value="60">60 FPS (Pro)</option>
         </select>
       </div>
     </div>
+
+    <div class="controls">
+      <button id="startBtn"><span>●</span> Start Recording</button>
+      <button id="stopBtn" disabled><span>■</span> Stop</button>
+    </div>
+
+    <div class="controls">
+      <button id="pauseBtn" class="secondary-btn" disabled>⏸ Pause</button>
+      <button id="resumeBtn" class="secondary-btn" disabled>▶ Resume</button>
+      <button id="screenshotBtn" class="secondary-btn">📸 Screenshot</button>
+    </div>
+
+    <div class="status-bar">
+      <span id="status">Ready to Record</span>
+      <button id="updateBtn" class="secondary-btn" style="padding: 5px 10px; font-size: 11px;">🔄 Check for Updates</button>
+    </div>
   </div>
 
-  <div class="controls">
-    <button id="startBtn">Start Recording</button>
-    <button id="stopBtn" disabled>Stop</button>
-    <button id="pauseBtn" disabled>Pause</button>
-    <button id="resumeBtn" disabled>Resume</button>
-    <button id="screenshotBtn">Screenshot 📸</button>
-  </div>
-
-  <p id="status">Ready</p>
-
-  <div style="margin-top: 20px; text-align: right;">
-    <button id="updateBtn" style="font-size: 12px; opacity: 0.7;">Check for Updates 🔄</button>
+  <div id="overlay">
+    <h2 id="overlayText">Processing Video...</h2>
+    <div class="loader"><div class="loader-bar" id="progressBar"></div></div>
+    <p style="color: #aaa; font-size: 12px; margin-top: 10px;">Please wait while we optimize your file.</p>
   </div>
 
   <script src="renderer.js"></script>
-  <script>
-    document.getElementById('updateBtn').onclick = () => {
-      window.api.checkForUpdates();
-      document.getElementById('status').innerText = "Checking for updates...";
-    };
-  </script>
 </body>
 </html>

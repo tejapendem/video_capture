@@ -4,10 +4,13 @@ const pauseBtn = document.getElementById("pauseBtn");
 const resumeBtn = document.getElementById("resumeBtn");
 const screenshotBtn = document.getElementById("screenshotBtn");
 const status = document.getElementById("status");
+const overlay = document.getElementById("overlay"); // New
+const progressBar = document.getElementById("progressBar"); // New
 const micToggle = document.getElementById("micToggle");
 const sysAudioToggle = document.getElementById("sysAudioToggle");
 const recordMode = document.getElementById("recordMode");
 const fpsSelect = document.getElementById("fpsSelect");
+const updateBtn = document.getElementById("updateBtn"); // New
 
 let recorder = null;
 let activeStreams = [];
@@ -15,15 +18,39 @@ let audioContext = null;
 let regionData = null;
 let isRecording = false;
 
+// --- EVENT LISTENERS ---
 startBtn.onclick = prepareAndStart;
 stopBtn.onclick = stopRecording;
 
 pauseBtn.onclick = () => {
-  if (recorder && recorder.state === "recording") { recorder.pause(); pauseBtn.disabled = true; resumeBtn.disabled = false; status.textContent = "Paused ⏸"; }
+  if (recorder && recorder.state === "recording") {
+    recorder.pause();
+    updateUIState('paused');
+  }
 };
+
 resumeBtn.onclick = () => {
-  if (recorder && recorder.state === "paused") { recorder.resume(); pauseBtn.disabled = false; resumeBtn.disabled = true; status.textContent = "Recording... 🔴"; }
+  if (recorder && recorder.state === "paused") {
+    recorder.resume();
+    updateUIState('recording');
+  }
 };
+
+// Update Check Logic
+if (updateBtn) {
+  updateBtn.onclick = async () => {
+    updateBtn.textContent = "Checking...";
+    updateBtn.disabled = true;
+    const result = await window.api.checkForUpdates();
+    // Reset button after 5 seconds
+    setTimeout(() => {
+      updateBtn.textContent = "🔄 Check for Updates";
+      updateBtn.disabled = false;
+    }, 5000);
+  };
+}
+
+// --- MAIN FUNCTIONS ---
 
 async function prepareAndStart() {
   if (recordMode.value === "region") {
@@ -67,7 +94,7 @@ async function startRecording() {
       }
     });
 
-    // AUDIO
+    // AUDIO SETUP
     let finalAudioTracks = [];
     if (micToggle.checked || sysAudioToggle.checked) {
       try {
@@ -104,7 +131,7 @@ async function startRecording() {
       } catch (e) { console.error("Audio Context Failed"); }
     }
 
-    // COMBINE
+    // COMBINE & DRAW
     let finalStream;
     if (regionData) {
       const videoElem = document.createElement('video');
@@ -146,7 +173,7 @@ async function startRecording() {
       finalStream = new MediaStream([...videoStream.getVideoTracks(), ...finalAudioTracks]);
     }
 
-    // RECORDING - 25 Mbps for Extreme Quality
+    // RECORDING START
     recorder = new MediaRecorder(finalStream, {
       mimeType: "video/webm; codecs=vp9",
       videoBitsPerSecond: 25000000 
@@ -154,23 +181,16 @@ async function startRecording() {
 
     recorder.ondataavailable = async (e) => {
       if (e.data.size > 0) {
-        const buffer = await e.data.arrayBuffer();
-        window.api.writeRecordingChunk(new Uint8Array(buffer));
+        window.api.writeRecordingChunk(new Uint8Array(await e.data.arrayBuffer()));
       }
     };
 
     recorder.onstop = finishRecording;
     recorder.start(500); 
     isRecording = true;
-
-    startBtn.disabled = true;
-    stopBtn.disabled = false;
-    pauseBtn.disabled = false;
-    resumeBtn.disabled = true;
-    status.textContent = "Recording... 🔴";
+    updateUIState('recording');
 
   } catch (error) {
-    console.error(error);
     status.textContent = "Error: " + error.message;
     window.api.restoreWindow();
   }
@@ -185,26 +205,76 @@ function stopRecording() {
 }
 
 async function finishRecording() {
-  status.textContent = "Finalizing...";
-  try {
-    await new Promise(r => setTimeout(r, 1000));
+  // SHOW OVERLAY & START PROGRESS
+  if (overlay && progressBar) {
+    overlay.style.display = "flex";
+    progressBar.style.width = "0%";
+    
+    // Simulate progress while saving
+    let progress = 0;
+    const interval = setInterval(() => {
+      if (progress < 90) {
+        progress += Math.random() * 10;
+        progressBar.style.width = progress + "%";
+      }
+    }, 100);
+
+    try {
+      await new Promise(r => setTimeout(r, 1000)); // Ensure flush
+      const result = await window.api.stopRecordingStream();
+      
+      clearInterval(interval);
+      progressBar.style.width = "100%"; // Finish bar
+      
+      setTimeout(() => {
+        overlay.style.display = "none";
+        status.textContent = (result && result !== "EMPTY") ? "Saved Successfully ✅" : "Cancelled/Empty";
+      }, 500);
+
+    } catch (err) {
+      clearInterval(interval);
+      overlay.style.display = "none";
+      status.textContent = "Save Failed ❌";
+      window.api.restoreWindow();
+    }
+  } else {
+    // Fallback if overlay elements missing
     const result = await window.api.stopRecordingStream();
-    status.textContent = (result && result !== "EMPTY") ? "Saved ✅" : "Cancelled/Empty";
-  } catch (err) {
-    status.textContent = "Save Failed";
-    window.api.restoreWindow();
+    status.textContent = (result && result !== "EMPTY") ? "Saved ✅" : "Cancelled";
   }
-  startBtn.disabled = false;
-  stopBtn.disabled = true;
-  pauseBtn.disabled = true;
-  resumeBtn.disabled = true;
+
+  updateUIState('idle');
   recorder = null;
 }
 
-// SCREENSHOT LOGIC (High Quality Wait)
+// Helper for Professional Button States
+function updateUIState(state) {
+  if (state === 'recording') {
+    startBtn.disabled = true;
+    stopBtn.disabled = false;
+    pauseBtn.disabled = false;
+    resumeBtn.disabled = true;
+    status.textContent = "Recording... 🔴";
+    status.style.color = "#ef476f";
+  } else if (state === 'paused') {
+    pauseBtn.disabled = true;
+    resumeBtn.disabled = false;
+    status.textContent = "Paused ⏸";
+    status.style.color = "#ffd166";
+  } else {
+    startBtn.disabled = false;
+    stopBtn.disabled = true;
+    pauseBtn.disabled = true;
+    resumeBtn.disabled = true;
+    status.textContent = "Ready to Record";
+    status.style.color = "#a0a0a0";
+  }
+}
+
+// SCREENSHOT LOGIC
 screenshotBtn.onclick = async () => {
   const originalText = status.textContent;
-  status.textContent = "Screenshot...";
+  status.textContent = "Taking Screenshot...";
   screenshotBtn.disabled = true;
 
   try {
@@ -215,7 +285,7 @@ screenshotBtn.onclick = async () => {
       rData = await window.api.openRegionSelector();
       if (!rData) {
         await window.api.restoreWindow();
-        status.textContent = "Cancelled";
+        status.textContent = originalText;
         screenshotBtn.disabled = false;
         return;
       }
@@ -231,7 +301,6 @@ screenshotBtn.onclick = async () => {
     video.srcObject = stream;
     video.play();
     
-    // WAIT 1 FULL SECOND for Image to Settle/Focus
     await new Promise(r => setTimeout(r, 1000));
     
     let attempts = 0;
@@ -255,38 +324,33 @@ screenshotBtn.onclick = async () => {
     canvas.height = cutH;
     const ctx = canvas.getContext("2d");
     
-    // High Quality Draw
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = "high";
     ctx.drawImage(video, cutX, cutY, cutW, cutH, 0, 0, cutW, cutH);
 
-    const base64Data = canvas.toDataURL("image/png", 1.0); // Max Quality PNG
+    const base64Data = canvas.toDataURL("image/png", 1.0);
     stream.getTracks().forEach(t => t.stop());
     
     await window.api.saveScreenshot(base64Data);
     status.textContent = "Saved 📸";
+    setTimeout(() => status.textContent = "Ready to Record", 2000);
 
   } catch (err) {
-    console.error(err);
     status.textContent = "Failed";
     window.api.restoreWindow();
   }
   screenshotBtn.disabled = false;
 };
 
-// LISTEN FOR WIDGET
+// WIDGET LISTENER
 window.api.onTriggerAction((action) => {
-  console.log("Received Action:", action);
-  
   if (action === 'screenshot') {
     screenshotBtn.click();
   } 
   else if (action === 'record') {
     if (!isRecording) {
-      console.log("Starting Record from Widget");
       startBtn.click();
     } else {
-      console.log("Stopping Record from Widget");
       stopBtn.click();
     }
   }

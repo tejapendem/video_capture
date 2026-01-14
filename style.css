@@ -1,5 +1,145 @@
-body { font-family: Arial, sans-serif; padding: 20px; background: #f0f0f0; }
-button { padding: 10px 15px; margin-right: 5px; cursor: pointer; }
-button:disabled { cursor: not-allowed; opacity: 0.6; }
-.settings { background: white; padding: 15px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-#status { font-weight: bold; margin-top: 20px; color: #333; }
+:root {
+  --bg-color: #1e1e24;
+  --card-bg: #2b2b36;
+  --primary: #4cc9f0;
+  --primary-hover: #3db5da;
+  --danger: #ef476f;
+  --text-main: #ffffff;
+  --text-dim: #a0a0a0;
+  --border-radius: 12px;
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  background-color: var(--bg-color);
+  color: var(--text-main);
+  margin: 0;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  user-select: none;
+}
+
+/* Main Card */
+.app-container {
+  background: var(--card-bg);
+  width: 90%;
+  max-width: 600px;
+  padding: 30px;
+  border-radius: var(--border-radius);
+  box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+  text-align: center;
+  border: 1px solid rgba(255,255,255,0.05);
+}
+
+h1 { font-size: 24px; font-weight: 600; margin-bottom: 25px; letter-spacing: -0.5px; }
+
+/* Settings Grid */
+.settings-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 15px;
+  margin-bottom: 30px;
+  text-align: left;
+}
+
+.setting-item {
+  background: rgba(0,0,0,0.2);
+  padding: 15px;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+label { font-size: 13px; color: var(--text-dim); font-weight: 500; }
+
+select, input[type="checkbox"] {
+  background: #3a3a45;
+  color: white;
+  border: 1px solid #4a4a55;
+  padding: 8px;
+  border-radius: 6px;
+  outline: none;
+  width: 100%;
+}
+
+/* Checkbox specific styling */
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  color: white;
+  font-size: 14px;
+}
+input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--primary); }
+
+/* Buttons */
+.controls {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  margin-top: 20px;
+}
+
+button {
+  padding: 12px 24px;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Primary Button (Start) */
+#startBtn { background: var(--primary); color: #000; }
+#startBtn:hover { background: var(--primary-hover); transform: translateY(-2px); }
+#startBtn:disabled { background: #444; color: #777; cursor: not-allowed; transform: none; }
+
+/* Danger Button (Stop) */
+#stopBtn { background: var(--danger); color: white; }
+#stopBtn:hover { opacity: 0.9; transform: translateY(-2px); }
+#stopBtn:disabled { background: #444; opacity: 0.5; cursor: not-allowed; transform: none; }
+
+/* Secondary Buttons */
+.secondary-btn { background: #444; color: white; }
+.secondary-btn:hover { background: #555; }
+.secondary-btn:disabled { opacity: 0.5; cursor: default; }
+
+/* Status Bar */
+.status-bar {
+  margin-top: 25px;
+  padding-top: 20px;
+  border-top: 1px solid rgba(255,255,255,0.1);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+  color: var(--text-dim);
+}
+
+/* Progress Overlay */
+#overlay {
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+  background: rgba(0,0,0,0.85);
+  backdrop-filter: blur(5px);
+  display: none; /* Hidden by default */
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+.loader {
+  width: 300px; height: 6px; background: #444; border-radius: 3px; overflow: hidden; margin-top: 15px;
+}
+.loader-bar {
+  width: 0%; height: 100%; background: var(--primary); transition: width 0.3s;
+}

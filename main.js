@@ -3,9 +3,22 @@ const { autoUpdater } = require("electron-updater");
 const path = require("path");
 const fs = require("fs");
 const ffmpeg = require("fluent-ffmpeg");
-const ffmpegPath = require("ffmpeg-static");
 
+// --- CRITICAL FIX: FFmpeg Path Logic ---
+let ffmpegPath;
+if (app.isPackaged) {
+  // In production, finding the unpacked binary is tricky. 
+  // We point to the node_modules inside the resources folder.
+  ffmpegPath = require('ffmpeg-static').replace(
+    'app.asar',
+    'app.asar.unpacked'
+  );
+} else {
+  // In dev mode
+  ffmpegPath = require("ffmpeg-static");
+}
 ffmpeg.setFfmpegPath(ffmpegPath);
+// ----------------------------------------
 
 let win;
 let selectorWin;
@@ -19,7 +32,6 @@ let isQuitting = false;
 function setupAutoUpdater() {
   autoUpdater.logger = require("electron-log");
   autoUpdater.logger.transports.file.level = "info";
-  // Only check if packed (built) to avoid dev errors
   if (app.isPackaged) {
     autoUpdater.checkForUpdatesAndNotify();
   }
@@ -31,7 +43,8 @@ function createWindow() {
     width: 900,
     height: 750,
     title: "Teja Capture Pro",
-    icon: path.join(__dirname, "build", "icon.png"), // Window Icon
+    // Fix Icon path for Prod
+    icon: path.join(__dirname, "build", "icon.png"), 
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
       contextIsolation: true,
@@ -50,7 +63,7 @@ function createWindow() {
   });
 }
 
-// --- WIDGET (The Logo) ---
+// --- WIDGET (LOGO) ---
 function createWidget() {
   const display = screen.getPrimaryDisplay();
   const { width, height } = display.bounds;
@@ -86,10 +99,9 @@ function createTray() {
 
 // --- APP LIFECYCLE ---
 app.whenReady().then(() => {
-  // 1. FORCE DOCK ICON (Fixes the generic icon issue)
+  // FORCE DOCK ICON TO SHOW
   if (process.platform === 'darwin') {
-    const iconImage = path.join(__dirname, "build", "icon.png");
-    app.dock.setIcon(iconImage);
+    app.dock.setIcon(path.join(__dirname, "build", "icon.png"));
   }
 
   createWindow();
@@ -98,14 +110,13 @@ app.whenReady().then(() => {
   setupAutoUpdater();
 });
 
-// FIX: Re-open app when Dock Icon is clicked
 app.on('activate', () => {
   if (BrowserWindow.getAllWindows().length === 0) {
     createWindow();
   } else if (win) {
     win.show();
     win.restore();
-    win.focus(); // Brings it to front
+    win.focus();
   }
 });
 
@@ -183,7 +194,6 @@ ipcMain.handle("write-recording-chunk", async (e, chunk) => {
 ipcMain.handle("stop-recording-stream", async () => {
   if (currentWriteStream) { await new Promise(r => currentWriteStream.end(r)); currentWriteStream = null; }
   
-  // Bring window back when recording stops
   if (win) { win.show(); win.restore(); win.focus(); }
   
   if (!tempFilePath || !fs.existsSync(tempFilePath)) return null;
@@ -205,7 +215,8 @@ ipcMain.handle("stop-recording-stream", async () => {
     ffmpeg(tempFilePath).inputFormat("webm")
       .outputOptions([`-c:v ${videoCodec}`, ...outputOptions])
       .on("end", () => { try { fs.unlinkSync(tempFilePath); } catch (e) {} resolve(filePath); })
-      .on("error", () => resolve(null)).save(filePath);
+      .on("error", (e) => { console.error(e); resolve(null); })
+      .save(filePath);
   });
 });
 
